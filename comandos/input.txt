@@ -1,0 +1,15 @@
+archivo.txt
+Descargas
+Documentos
+eclipse-workspace
+Escritorio
+IdeaProjects
+Imágenes
+input.txt
+Música
+opt
+output.txt
+Plantillas
+Público
+snap
+Vídeos
