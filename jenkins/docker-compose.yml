@@ -1,0 +1,40 @@
+version: '3.9'
+
+services:
+  traefik:
+    image: traefik:v2.10
+    container_name: traefik
+    command:
+      - "--api.insecure=true"                   # Habilita la interfaz web de Traefik (desactiva en producción)
+      - "--providers.docker=true"              # Habilita la integración con Docker
+      - "--providers.docker.exposedbydefault=false"  # Requiere etiquetar los contenedores explícitamente
+      - "--entrypoints.web.address=:80"        # Define el puerto para HTTP
+    ports:
+      - "80:80"                                # Expone HTTP
+      - "8080:8080"                            # Expone la interfaz de administración
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro  # Acceso al socket Docker
+      - ./traefik:/etc/traefik                 # Monta configuración opcional (si la necesitas)
+    networks:
+      - web
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    ports:
+      - "50000:50000"                          # Puerto para los agentes de Jenkins
+    volumes:
+      - jenkins_home:/var/jenkins_home         # Persiste datos de Jenkins
+    labels:
+      - "traefik.enable=true"                  # Habilita la integración con Traefik
+      - "traefik.http.routers.jenkins.rule=Host(`jenkins.brayandev.info`)" # Ruta HTTP
+      - "traefik.http.services.jenkins.loadbalancer.server.port=8080" # Puerto interno de Jenkins
+    networks:
+      - web
+
+volumes:
+  jenkins_home:                                # Volumen persistente para Jenkins
+
+networks:
+  web:                                         # Red compartida entre Traefik y Jenkins
+    driver: bridge
