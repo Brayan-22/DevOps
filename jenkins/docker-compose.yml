@@ -46,8 +46,8 @@ services:
       - web
 
 volumes:
-  jenkins_home:                                # Volumen persistente para Jenkins
-
+  data:                                # Volumen persistente para Jenkins
+  home:
 networks:
   web:                                         # Red compartida entre Traefik y Jenkins
     driver: bridge
