@@ -11,24 +11,37 @@ services:
       - "--entrypoints.web.address=:80"        # Define el puerto para HTTP
     ports:
       - "80:80"                                # Expone HTTP
-      - "8080:8080"                            # Expone la interfaz de administración
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro  # Acceso al socket Docker
-      - ./traefik:/etc/traefik                 # Monta configuración opcional (si la necesitas)
+      - ./:/etc/traefik                     # Configuración de Traefik
+      - /etc/localtime:/etc/localtime:ro     # Sincroniza la zona horaria
+    labels:
+        - "traefik.enable=true"                 # Habilita la integración con Traefik
+        - "traefik.http.routers.traefik.rule=Host(`traefik.brayandev.info`)" # Ruta HTTP
+        - "traefik.http.services.traefik.loadbalancer.server.port=8080" # Puerto interno de Traefik
+        - "traefik.docker.network=web"          # Red compartida con Jenkins
+        - "traefik.http.routers.traefik.entrypoints=web" # Punto de entrada HTTP
+        - "traefik.http.routers.traefik.service=api@internal" # Servicio asociado
     networks:
       - web
 
   jenkins:
     image: jenkins/jenkins:lts
     container_name: jenkins
+    user: root
     ports:
       - "50000:50000"                          # Puerto para los agentes de Jenkins
     volumes:
-      - jenkins_home:/var/jenkins_home         # Persiste datos de Jenkins
+      - data:/var/jenkins_home         # Persiste datos de Jenkins
+      - home:/usr/share/jenkins/    # Configuración de Jenkins
+      - /var/run/docker.sock:/var/run/docker.sock # Acceso al socket Docker
     labels:
       - "traefik.enable=true"                  # Habilita la integración con Traefik
       - "traefik.http.routers.jenkins.rule=Host(`jenkins.brayandev.info`)" # Ruta HTTP
       - "traefik.http.services.jenkins.loadbalancer.server.port=8080" # Puerto interno de Jenkins
+      - "traefik.docker.network=web"           # Red compartida con Traefik
+      - "traefik.http.routers.jenkins.entrypoints=web" # Punto de entrada HTTP
+      - "traefik.http.routers.jenkins.service=jenkins" # Servicio asociado"
     networks:
       - web
 
