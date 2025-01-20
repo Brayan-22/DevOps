@@ -1,0 +1,31 @@
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    user: root
+    ports:
+      - "50000:50000"                          # Puerto para los agentes de Jenkins
+    volumes:
+      - data:/var/jenkins_home         # Persiste datos de Jenkins
+      - home:/usr/share/jenkins/    # Configuración de Jenkins
+      - /var/run/docker.sock:/var/run/docker.sock # Acceso al socket Docker
+    labels:
+      - "traefik.enable=true"                  # Habilita la integración con Traefik
+      - "traefik.http.routers.jenkins.rule=Host(`jenkins.brayandev.info`)" # Ruta HTTP
+      - "traefik.http.services.jenkins.loadbalancer.server.port=8080" # Puerto interno de Jenkins
+      - "traefik.docker.network=web"           # Red compartida con Traefik
+      - "traefik.http.routers.jenkins.entrypoints=web" # Punto de entrada HTTP
+      - "traefik.http.routers.jenkins.service=jenkins" # Servicio asociado"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+    networks:
+      - reverse_proxy
+volumes:
+  data:                                # Volumen persistente para Jenkins
+  home:
+networks:
+  reverse_proxy:
+    external: true
