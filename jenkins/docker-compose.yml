@@ -1,30 +1,6 @@
 version: '3.9'
 
 services:
-  traefik:
-    image: traefik:v2.10
-    container_name: traefik
-    command:
-      - "--api.insecure=true"                   # Habilita la interfaz web de Traefik (desactiva en producción)
-      - "--providers.docker=true"              # Habilita la integración con Docker
-      - "--providers.docker.exposedbydefault=false"  # Requiere etiquetar los contenedores explícitamente
-      - "--entrypoints.web.address=:80"        # Define el puerto para HTTP
-    ports:
-      - "80:80"                                # Expone HTTP
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro  # Acceso al socket Docker
-      - ./:/etc/traefik                     # Configuración de Traefik
-      - /etc/localtime:/etc/localtime:ro     # Sincroniza la zona horaria
-    labels:
-        - "traefik.enable=true"                 # Habilita la integración con Traefik
-        - "traefik.http.routers.traefik.rule=Host(`traefik.brayandev.info`)" # Ruta HTTP
-        - "traefik.http.services.traefik.loadbalancer.server.port=8080" # Puerto interno de Traefik
-        - "traefik.docker.network=web"          # Red compartida con Jenkins
-        - "traefik.http.routers.traefik.entrypoints=web" # Punto de entrada HTTP
-        - "traefik.http.routers.traefik.service=api@internal" # Servicio asociado
-    networks:
-      - web
-
   jenkins:
     image: jenkins/jenkins:lts
     container_name: jenkins
@@ -44,10 +20,9 @@ services:
       - "traefik.http.routers.jenkins.service=jenkins" # Servicio asociado"
     networks:
       - web
-
 volumes:
   data:                                # Volumen persistente para Jenkins
   home:
 networks:
-  web:                                         # Red compartida entre Traefik y Jenkins
+  web:                                         # Red compartida
     driver: bridge
