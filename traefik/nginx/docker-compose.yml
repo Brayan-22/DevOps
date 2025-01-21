@@ -1,0 +1,18 @@
+services:
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    networks:
+        - reverse-proxy
+    labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.nginx-http.rule=Host(`nginx.localhost`)"
+        - "traefik.http.routers.nginx-http.entrypoints=web"
+        - "traefik.http.routers.nginx-https.tls=true"
+        - "traefik.http.routers.nginx-https.entrypoints=websecure"
+        - "traefik.http.routers.nginx-https.tls.certresolver=cloudflare"
+        - "traefik.http.routers.nginx-https.rule=Host(`nginx.localhost`)"
+
+networks:
+    reverse-proxy:
+        external: true

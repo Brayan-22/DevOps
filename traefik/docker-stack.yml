@@ -1,33 +1,44 @@
 services:
   traefik:
-    image: traefik:v2.10
-    container_name: traefik
-    command:
-      - "--api.insecure=true"                   # Habilita la interfaz web de Traefik (desactiva en producción)
-      - "--providers.docker=true"              # Habilita la integración con Docker
-      - "--providers.docker.exposedbydefault=false"  # Requiere etiquetar los contenedores explícitamente
-      - "--entrypoints.web.address=:80"        # Define el puerto para HTTP
-    ports:
-      - "80:80"                                # Expone HTTP
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro  # Acceso al socket Docker
-      - ./:/etc/traefik                     # Configuración de Traefik
-      - /etc/localtime:/etc/localtime:ro     # Sincroniza la zona horaria
-    labels:
-      - "traefik.enable=true"                 # Habilita la integración con Traefik
-      - "traefik.http.routers.traefik.rule=Host(`traefik.brayandev.info`)" # Ruta HTTP
-      - "traefik.http.services.traefik.loadbalancer.server.port=8080" # Puerto interno de Traefik
-      - "traefik.docker.network=web"          # Red compartida con Jenkins
-      - "traefik.http.routers.traefik.entrypoints=web" # Punto de entrada HTTP
-      - "traefik.http.routers.traefik.service=api@internal" # Servicio asociado
-    deploy:
-        replicas: 1
-        restart_policy:
-            condition: on-failure
-            delay: 5s
+    image: traefik:v3.1.5-nanoserver-ltsc2022
     networks:
       - reverse_proxy
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./:/etc/traefik
+      #     - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/traefik.yaml:/etc/traefik/traefik.yaml:ro
+    deploy:
+      replicas: 1
+      labels:
+        #Activamos para que docker pueda leer estas variables.
+        - "traefik.enable=true"
+        #red externa que usa traefik con docker swarm
+        - "traefik.docker.network=reverse_proxy"
+        #Punto de acceso, en esta configuracion websecure forever
+        - "traefik.http.routers.traefik.entrypoints=websecure"
+        #nombre de dominio que traefik va a redireccionar al contenedor.
+        #- "traefik.http.routers.traefik.rule=Host(`traefik.brayandev.info`)"
+        - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
+        #Nombre del servicio "importante"
+        - "traefik.http.routers.traefik.service=api@internal"
+        #Puerto que traefik necesita para exponerlo en rule
+        - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+        #Activando tls al contenedor
+        - "traefik.http.routers.traefik.tls=true"
+        #Seleccionando que certresolver nos dara certificados "staging" o "production"
+        - "traefik.http.routers.traefik.tls.certresolver=production"
+        #PONIENDO middlewar "auth" para autenticacion al dashborad de traefik
+        - "traefik.http.routers.traefik.middlewares=auth"
+        #Configurando el middlewar "basicauth" con un usuario:
+        #Comando para crear usuarios: echo $(htpasswd -nb user password) | sed -e s/\\$/\\$\\$/g
+        - "traefik.http.middlewares.auth.basicauth.users=root:$$apr1$$.CeTmZQ.$$9j7dfAerhuqK9zgyLqcwR/"
+      restart_policy:
+        condition: on-failure
+        delay: 5s
 networks:
-  reverse_proxy:                                         # Red compartida
+  reverse_proxy:
     external: true
