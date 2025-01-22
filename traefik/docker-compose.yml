@@ -1,58 +1,42 @@
-#services:
-#  traefik:
-#    image: traefik:v2.10
-#    container_name: traefik
-#    command:
-#      - "--api.insecure=true"                   # Habilita la interfaz web de Traefik (desactiva en producción)
-#      - "--providers.docker=true"              # Habilita la integración con Docker
-#      - "--providers.docker.exposedbydefault=false"  # Requiere etiquetar los contenedores explícitamente
-#      - "--entrypoints.web.address=:80"        # Define el puerto para HTTP
-#    ports:
-#      - "80:80"                                # Expone HTTP
-#    volumes:
-#      - /var/run/docker.sock:/var/run/docker.sock:ro  # Acceso al socket Docker
-#      - ./:/etc/traefik                     # Configuración de Traefik
-#      - /etc/localtime:/etc/localtime:ro     # Sincroniza la zona horaria
-#    labels:
-#      - "traefik.enable=true"                 # Habilita la integración con Traefik
-#      - "traefik.http.routers.traefik.rule=Host(`traefik.brayandev.info`)" # Ruta HTTP
-#      - "traefik.http.services.traefik.loadbalancer.server.port=8080" # Puerto interno de Traefik
-#      - "traefik.docker.network=web"          # Red compartida con Jenkins
-#      - "traefik.http.routers.traefik.entrypoints=web" # Punto de entrada HTTP
-#      - "traefik.http.routers.traefik.service=api@internal" # Servicio asociado
-#    networks:
-#      - web
-#networks:
-#  web:                                         # Red compartida
-#    driver: bridge
-
 services:
   traefik:
-    image: traefik:v3.1.5
-    container_name: traefik
-    ports:
-      - 80:80
-      - 443:443
-      - 8080:8080
-    environment:
-      - CF_DNS_API_TOKEN=${CF_DNS_API_TOKEN}
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./config/traefik.yaml:/etc/traefik/traefik.yaml:ro
-      - ./data/certs:/var/traefik/certs/:rw
-    networks:
-        - reverse-proxy
+    image: traefik:latest
+    container_name: "traefik"
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - reverse_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    environment:
+      - "CF_API_EMAIL=${CLOUDFLARE_EMAIL}"
+      - "CF_DNS_API_TOKEN=${CLOUDFLARE_API_TOKEN}"
+      #- "CF_API_KEY=${CLOUDFLARE_API_KEY}"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /home/ubuntu/docker/traefik/traefik.yml:/traefik.yml:ro
+      - /home/ubuntu/docker/traefik/acme.json:/acme.json
+      - /home/ubuntu/docker/traefik/config.yml:/config.yml:ro
+      - /home/ubuntu/docker/traefik/logs:/var/log/traefik
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
-      - "traefik.http.routers.traefik.entrypoints=websecure"
-      - "traefik.http.routers.traefik.service=api@internal"
-      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
-      - "traefik.http.routers.traefik.tls=true"
-      - "traefik.http.routers.traefik.tls.certresolver=cloudflare"
-      - "traefik.http.routers.traefik.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.users=root:$$apr1$$.CeTmZQ.$$9j7dfAerhuqK9zgyLqcwR/"
+      - "traefik.http.routers.traefik.entrypoints=web"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$apr1$$QWg5ZzJw$$7z1Zz1Zz1Zz1Zz1Zz1Zz1"
+      - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
+      - "traefik.http.routers.traefik-secure.entrypoints=websecure"
+      - "traefik.http.routers.traefik-secure.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik-secure.tls=true"
+      - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
+      - "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
+      - "traefik.http.routers.traefik-secure.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.traefik-secure.tls.domains[0].sans=*.${DOMAIN}"
+      - "traefik.http.routers.traefik-secure.service=api@internal"
 networks:
-    reverse-proxy:
+    reverse_proxy:
         external: true
