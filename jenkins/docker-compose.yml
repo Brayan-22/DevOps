@@ -17,6 +17,10 @@ services:
         - "traefik.http.routers.jenkins.rule=Host(`jenkins.${DOMAIN}`)"
         - "traefik.http.routers.jenkins.service=jenkins"
         - "traefik.http.services.jenkins.loadbalancer.server.port=8080"
+        - "traefik.http.routers.jenkins.tls=true"
+        - "traefik.http.routers.jenkins.tls.certresolver=cloudflare"
+        - "traefik.http.routers.jenkins.tls.domains[0].main=${DOMAIN}"
+        - "traefik.http.routers.jenkins.tls.domains[0].sans=*.${DOMAIN}"
     restart: unless-stopped
     networks:
       - reverse-proxy
