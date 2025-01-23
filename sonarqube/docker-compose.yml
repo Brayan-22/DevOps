@@ -31,9 +31,9 @@ services:
     container_name: postgres-sonarqube
     restart: unless-stopped
     environment:
-      - POSTGRES_USER_FILE=/run/secrets/user
-      - POSTGRES_PASSWORD_FILE=/run/secrets/password
-      - POSTGRES_DB_FILE=/run/secrets/database
+      - POSTGRES_USER_FILE:/run/secrets/user
+      - POSTGRES_PASSWORD_FILE:/run/secrets/password
+      - POSTGRES_DB_FILE:/run/secrets/database
     networks:
       - default
     volumes:
