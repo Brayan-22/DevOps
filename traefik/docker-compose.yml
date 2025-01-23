@@ -1,16 +1,15 @@
 services:
   traefik:
-    image: traefik:latest
+    image: traefik:v2.10.3
     container_name: "traefik"
     restart: unless-stopped
-    security_opt:
-      - no-new-privileges:true
+      #security_opt:
+    #- no-new-privileges:true
     networks:
-      - reverse_proxy
+      - reverse-proxy
     ports:
       - "80:80"
       - "443:443"
-      - "8080:8080"
     environment:
       - "CF_API_EMAIL=${CLOUDFLARE_EMAIL}"
       - "CF_DNS_API_TOKEN=${CLOUDFLARE_API_TOKEN}"
@@ -20,23 +19,30 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /home/ubuntu/docker/traefik/traefik.yml:/traefik.yml:ro
       - /home/ubuntu/docker/traefik/acme.json:/acme.json
-      - /home/ubuntu/docker/traefik/config.yml:/config.yml:ro
+      #- /home/ubuntu/docker/traefik/config.yml:/config.yml:ro
       - /home/ubuntu/docker/traefik/logs:/var/log/traefik
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.traefik.entrypoints=web"
+      - "traefik.docker.network=reverse-proxy"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
       - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
-      - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$apr1$$QWg5ZzJw$$7z1Zz1Zz1Zz1Zz1Zz1Zz1"
-      - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
-      - "traefik.http.routers.traefik-secure.entrypoints=websecure"
-      - "traefik.http.routers.traefik-secure.rule=Host(`traefik.${DOMAIN}`)"
-      - "traefik.http.routers.traefik-secure.tls=true"
-      - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
-      - "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
-      - "traefik.http.routers.traefik-secure.tls.domains[0].main=${DOMAIN}"
-      - "traefik.http.routers.traefik-secure.tls.domains[0].sans=*.${DOMAIN}"
-      - "traefik.http.routers.traefik-secure.service=api@internal"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+      - "traefik.http.routers.traefik.tls=true"
+      - "traefik.http.routers.traefik.tls.certresolver=cloudflare"
+      - "traefik.http.routers.traefik.middlewares=auth"
+      #Comando para crear usuarios: echo $(htpasswd -nb user password) | sed -e s/\\$/\\$\\$/g
+      - "traefik.http.middlewares.auth.basicauth.users=admin:password"
+      #- "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+      #- "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
+      #- "traefik.http.routers.traefik-secure.entrypoints=websecure"
+      #- "traefik.http.routers.traefik-secure.rule=Host(`traefik.${DOMAIN}`)"
+      #- "traefik.http.routers.traefik-secure.tls=true"
+      #- "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
+      #- "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
+      - "traefik.http.routers.traefik.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.traefik.tls.domains[0].sans=*.${DOMAIN}"
+      #- "traefik.http.routers.traefik-secure.service=api@internal"
 networks:
-    reverse_proxy:
-        external: true
+  reverse-proxy:
+    external: true
