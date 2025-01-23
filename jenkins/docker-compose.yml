@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   jenkins:
     image: jenkins/jenkins:lts
@@ -8,21 +6,20 @@ services:
     ports:
       - "50000:50000"                          # Puerto para los agentes de Jenkins
     volumes:
-      - data:/var/jenkins_home         # Persiste datos de Jenkins
-      - home:/usr/share/jenkins/    # Configuración de Jenkins
-      - /var/run/docker.sock:/var/run/docker.sock # Acceso al socket Docker
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /home/ubuntu/docker/jenkins/jenkins_home:/var/jenkins_home
+      - /home/ubuntu/docker/jenkins/logs:/var/log/jenkins
     labels:
-      - "traefik.enable=true"                  # Habilita la integración con Traefik
-      - "traefik.http.routers.jenkins.rule=Host(`jenkins.brayandev.info`)" # Ruta HTTP
-      - "traefik.http.services.jenkins.loadbalancer.server.port=8080" # Puerto interno de Jenkins
-      - "traefik.docker.network=web"           # Red compartida con Traefik
-      - "traefik.http.routers.jenkins.entrypoints=web" # Punto de entrada HTTP
-      - "traefik.http.routers.jenkins.service=jenkins" # Servicio asociado"
+        - "traefik.enable=true"
+        - "traefik.docker.network=reverse-proxy"
+        - "traefik.http.routers.jenkins.entrypoints=websecure"
+        - "traefik.http.routers.jenkins.rule=Host(`jenkins.${DOMAIN}`)"
+        - "traefik.http.routers.jenkins.service=jenkins"
+        - "traefik.http.services.jenkins.loadbalancer.server.port=8080"
+    restart: unless-stopped
     networks:
-      - web
-volumes:
-  data:                                # Volumen persistente para Jenkins
-  home:
+      - reverse-proxy
 networks:
-  web:                                         # Red compartida
-    driver: bridge
+    reverse-proxy:
+        external: true
