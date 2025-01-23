@@ -1,0 +1,35 @@
+services:
+  sonar:
+    image: sonarqube:lts-community
+    container_name: sonarqube
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    env_file:
+      - .env
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=reverse-proxy"
+      - "traefik.http.routers.sonarqube.entrypoints=websecure"
+      - "traefik.http.routers.sonarqube.rule=Host(`sonarqube.${DOMAIN}`)"
+      - "traefik.http.routers.sonarqube.service=sonarqube"
+      - "traefik.http.services.sonarqube.loadbalancer.server.port=9000"
+      - "traefik.http.routers.sonarqube.tls=true"
+      - "traefik.http.routers.sonarqube.tls.certresolver=cloudflare"
+      - "traefik.http.routers.sonarqube.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.sonarqube.tls.domains[0].sans=*.${DOMAIN}"
+    networks:
+      - sonar
+      - reverse-proxy
+    volumes:
+      - data:/opt/sonarqube/data
+      - extensions:/opt/sonarqube/extensions
+      - /ubuntu/docker/sonarqube/sonarqube/logs:/opt/sonarqube/logs
+volumes:
+    data:
+    extensions:
+networks:
+  reverse-proxy:
+    external: true
+  sonar:
+    external: true
