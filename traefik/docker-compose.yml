@@ -3,8 +3,6 @@ services:
     image: traefik:v2.10.3
     container_name: "traefik"
     restart: unless-stopped
-      #security_opt:
-    #- no-new-privileges:true
     networks:
       - reverse-proxy
     ports:
@@ -19,7 +17,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /home/ubuntu/docker/traefik/traefik.yml:/traefik.yml:ro
       - /home/ubuntu/docker/traefik/acme.json:/acme.json
-      #- /home/ubuntu/docker/traefik/config.yml:/config.yml:ro
       - /home/ubuntu/docker/traefik/logs:/var/log/traefik
     labels:
       - "traefik.enable=true"
@@ -32,17 +29,9 @@ services:
       - "traefik.http.routers.traefik.tls.certresolver=cloudflare"
       - "traefik.http.routers.traefik.middlewares=auth"
       #Comando para crear usuarios: echo $(htpasswd -nb user password) | sed -e s/\\$/\\$\\$/g
-      - "traefik.http.middlewares.auth.basicauth.users=admin:password"
-      #- "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
-      #- "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
-      #- "traefik.http.routers.traefik-secure.entrypoints=websecure"
-      #- "traefik.http.routers.traefik-secure.rule=Host(`traefik.${DOMAIN}`)"
-      #- "traefik.http.routers.traefik-secure.tls=true"
-      #- "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
-      #- "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
+      - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$NUCd1BYv$$mb6817ZdU0FTpTEhaeMoU0"
       - "traefik.http.routers.traefik.tls.domains[0].main=${DOMAIN}"
       - "traefik.http.routers.traefik.tls.domains[0].sans=*.${DOMAIN}"
-      #- "traefik.http.routers.traefik-secure.service=api@internal"
 networks:
   reverse-proxy:
     external: true

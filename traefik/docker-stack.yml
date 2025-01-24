@@ -1,44 +1,38 @@
 services:
   traefik:
-    image: traefik:v3.1.5-nanoserver-ltsc2022
+    image: traefik:v2.10.3
     networks:
-      - reverse_proxy
+      - reverse-proxy
     ports:
-      - 80:80
-      - 443:443
+      - "80:80"
+      - "443:443"
+    environment:
+      - "CF_API_EMAIL=${CLOUDFLARE_EMAIL}"
+      - "CF_DNS_API_TOKEN=${CLOUDFLARE_API_TOKEN}"
     volumes:
-      - ./:/etc/traefik
-      #     - /etc/localtime:/etc/localtime:ro
+      - /etc/localtime:/etc/localtime:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./config/traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - /home/ubuntu/docker/traefik/traefik.yml:/traefik.yml:ro
+      - /home/ubuntu/docker/traefik/acme.json:/acme.json
+      - /home/ubuntu/docker/traefik/logs:/var/log/traefik
     deploy:
       replicas: 1
-      labels:
-        #Activamos para que docker pueda leer estas variables.
-        - "traefik.enable=true"
-        #red externa que usa traefik con docker swarm
-        - "traefik.docker.network=reverse_proxy"
-        #Punto de acceso, en esta configuracion websecure forever
-        - "traefik.http.routers.traefik.entrypoints=websecure"
-        #nombre de dominio que traefik va a redireccionar al contenedor.
-        #- "traefik.http.routers.traefik.rule=Host(`traefik.brayandev.info`)"
-        - "traefik.http.routers.traefik.rule=Host(`traefik.localhost`)"
-        #Nombre del servicio "importante"
-        - "traefik.http.routers.traefik.service=api@internal"
-        #Puerto que traefik necesita para exponerlo en rule
-        - "traefik.http.services.traefik.loadbalancer.server.port=8080"
-        #Activando tls al contenedor
-        - "traefik.http.routers.traefik.tls=true"
-        #Seleccionando que certresolver nos dara certificados "staging" o "production"
-        - "traefik.http.routers.traefik.tls.certresolver=production"
-        #PONIENDO middlewar "auth" para autenticacion al dashborad de traefik
-        - "traefik.http.routers.traefik.middlewares=auth"
-        #Configurando el middlewar "basicauth" con un usuario:
-        #Comando para crear usuarios: echo $(htpasswd -nb user password) | sed -e s/\\$/\\$\\$/g
-        - "traefik.http.middlewares.auth.basicauth.users=root:$$apr1$$.CeTmZQ.$$9j7dfAerhuqK9zgyLqcwR/"
       restart_policy:
         condition: on-failure
-        delay: 5s
+      labels:
+        - "traefik.enable=true"
+        - "traefik.docker.network=reverse-proxy"
+        - "traefik.http.routers.traefik.entrypoints=websecure"
+        - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+        - "traefik.http.routers.traefik.service=api@internal"
+        - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+        - "traefik.http.routers.traefik.tls=true"
+        - "traefik.http.routers.traefik.tls.certresolver=cloudflare"
+        - "traefik.http.routers.traefik.middlewares=auth"
+        #Comando para crear usuarios: echo $(htpasswd -nb user password) | sed -e s/\\$/\\$\\$/g
+        - "traefik.http.middlewares.auth.basicauth.users=admin:$$apr1$$NUCd1BYv$$mb6817ZdU0FTpTEhaeMoU0"
+        - "traefik.http.routers.traefik.tls.domains[0].main=${DOMAIN}"
+        - "traefik.http.routers.traefik.tls.domains[0].sans=*.${DOMAIN}"
 networks:
-  reverse_proxy:
+  reverse-proxy:
     external: true
