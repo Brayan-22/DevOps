@@ -11,19 +11,19 @@ services:
       - /home/ubuntu/docker/jenkins/jenkins_home:/var/jenkins_home
       - /home/ubuntu/docker/jenkins/logs:/var/log/jenkins
     labels:
-        - "traefik.enable=true"
-        - "traefik.docker.network=reverse-proxy"
-        - "traefik.http.routers.jenkins.entrypoints=websecure"
-        - "traefik.http.routers.jenkins.rule=Host(`jenkins.${DOMAIN}`)"
-        - "traefik.http.routers.jenkins.service=jenkins"
-        - "traefik.http.services.jenkins.loadbalancer.server.port=8080"
-        - "traefik.http.routers.jenkins.tls=true"
-        - "traefik.http.routers.jenkins.tls.certresolver=cloudflare"
-        - "traefik.http.routers.jenkins.tls.domains[0].main=${DOMAIN}"
-        - "traefik.http.routers.jenkins.tls.domains[0].sans=*.${DOMAIN}"
+      - "traefik.enable=true"
+      - "traefik.docker.network=reverse-proxy"
+      - "traefik.http.routers.jenkins.entrypoints=websecure"
+      - "traefik.http.routers.jenkins.rule=Host(`jenkins.${DOMAIN}`)"
+      - "traefik.http.routers.jenkins.service=jenkins"
+      - "traefik.http.services.jenkins.loadbalancer.server.port=8080"
+      - "traefik.http.routers.jenkins.tls=true"
+      - "traefik.http.routers.jenkins.tls.certresolver=cloudflare"
+      - "traefik.http.routers.jenkins.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.jenkins.tls.domains[0].sans=*.${DOMAIN}"
     restart: unless-stopped
     networks:
       - reverse-proxy
 networks:
-    reverse-proxy:
-        external: true
+  reverse-proxy:
+    external: true

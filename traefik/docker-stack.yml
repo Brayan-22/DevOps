@@ -19,6 +19,10 @@ services:
       replicas: 1
       restart_policy:
         condition: on-failure
+        delay: 5s
+      placement:
+        constraints:
+          - node.role == manager
       labels:
         - "traefik.enable=true"
         - "traefik.docker.network=reverse-proxy"

@@ -1,0 +1,32 @@
+services:
+  database:
+    image: postgres:15.4-alpine
+    environment:
+      - POSTGRES_USER_FILE=/run/secrets/user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/password
+      - POSTGRES_DB_FILE=/run/secrets/database
+    networks:
+      - sonar
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    secrets:
+      - database
+      - user
+      - password
+    deploy:
+        replicas: 1
+        restart_policy:
+            condition: on-failure
+            delay: 5s
+volumes:
+  postgres:
+secrets:
+  database:
+    file: db_name.priv
+  user:
+    file: db_user.priv
+  password:
+    file: db_pass.priv
+networks:
+  sonar:
+    external: true
