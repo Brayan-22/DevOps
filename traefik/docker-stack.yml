@@ -1,6 +1,7 @@
 services:
   traefik:
     image: traefik:v2.10.3
+    user: "0:0"
     networks:
       - reverse-proxy
     ports:
@@ -20,6 +21,9 @@ services:
       restart_policy:
         condition: on-failure
         delay: 5s
+        max_attempts: 3
+        window: 30s
+
       placement:
         constraints:
           - node.role == manager
